@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>County-Level Risk Stratification for Managed Care Optimization</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --purple-900: #1a1440;
+  --purple-800: #2d2460;
+  --purple-700: #3d3080;
+  --purple-600: #5347b5;
+  --purple-500: #6e63cc;
+  --purple-400: #8f86dd;
+  --purple-300: #b3acee;
+  --purple-200: #d4d0f6;
+  --purple-100: #eceafe;
+  --purple-50:  #f5f4ff;
+  --high: #c0392b;
+  --high-light: #fdecea;
+  --med: #c8860a;
+  --med-light: #fef3dc;
+  --low: #1d9e75;
+  --low-light: #e1f5ee;
+  --text: #1a1440;
+  --text-muted: #6b5fa0;
+  --border: #d4d0f6;
+  --bg: #f5f4ff;
+  --white: #ffffff;
+  --sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --serif: 'DM Serif Display', Georgia, serif;
+}
+
+body { font-family: var(--sans); background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; }
+
+/* HERO */
+.hero {
+  background: var(--purple-800);
+  color: white; padding: 56px 40px 48px;
+  position: relative; overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; top: -80px; right: -80px;
+  width: 360px; height: 360px; border-radius: 50%;
+  border: 50px solid rgba(255,255,255,0.04);
+}
+.hero::after {
+  content: ''; position: absolute; bottom: -100px; left: 120px;
+  width: 240px; height: 240px; border-radius: 50%;
+  border: 35px solid rgba(255,255,255,0.03);
+}
+.hero-inner { max-width: 940px; margin: 0 auto; position: relative; z-index: 1; }
+.hero-eyebrow { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--purple-300); font-weight: 500; margin-bottom: 14px; }
+.hero h1 { font-family: var(--serif); font-size: clamp(26px, 4vw, 42px); font-weight: 400; line-height: 1.2; margin-bottom: 14px; }
+.hero p { font-size: 14px; color: rgba(255,255,255,0.7); max-width: 600px; line-height: 1.7; margin-bottom: 24px; }
+.hero-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+.tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.75); }
+
+.main { padding: 40px 24px; max-width: 940px; margin: 0 auto; }
+
+.section-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+
+/* STAT CARDS */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 32px; }
+.stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px 18px; box-shadow: 0 1px 4px rgba(26,20,64,0.08); transition: transform 0.15s; }
+.stat-card:hover { transform: translateY(-2px); }
+.stat-card.high { border-left: 3px solid var(--high); }
+.stat-card.med  { border-left: 3px solid var(--med); }
+.stat-card.low  { border-left: 3px solid var(--low); }
+.stat-card.purple { border-left: 3px solid var(--purple-600); }
+.stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); font-weight: 600; margin-bottom: 7px; }
+.stat-value { font-family: var(--serif); font-size: 36px; color: var(--purple-800); line-height: 1; margin-bottom: 5px; }
+.stat-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+/* CHARTS */
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+.chart-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(26,20,64,0.08); }
+.chart-card.full { grid-column: 1 / -1; }
+.chart-title { font-size: 13px; font-weight: 600; color: var(--purple-800); margin-bottom: 3px; }
+.chart-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 14px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-muted); }
+.legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+
+/* MAP */
+.map-placeholder {
+  background: var(--purple-50); border: 1px dashed var(--purple-300);
+  border-radius: 8px; padding: 20px; text-align: center;
+  color: var(--text-muted); font-size: 13px; line-height: 1.6;
+  min-height: 200px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px;
+}
+.map-placeholder strong { color: var(--purple-700); font-size: 14px; }
+
+/* SCATTER */
+#scatterCanvas { cursor: crosshair; }
+.tooltip-box {
+  position: absolute; background: var(--purple-800); color: white;
+  font-size: 11px; padding: 6px 10px; border-radius: 6px;
+  pointer-events: none; display: none; z-index: 10; line-height: 1.5;
+  max-width: 160px;
+}
+
+/* FINDINGS */
+.findings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 32px; }
+.finding-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(26,20,64,0.08); }
+.finding-badge { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; padding: 3px 8px; border-radius: 4px; display: inline-block; }
+.badge-risk    { background: var(--high-light); color: #8b2020; }
+.badge-struct  { background: var(--purple-100); color: var(--purple-700); }
+.badge-geo     { background: var(--med-light); color: #7a5200; }
+.badge-insight { background: var(--low-light); color: #0a6b4d; }
+.finding-title { font-size: 14px; font-weight: 600; color: var(--purple-800); margin-bottom: 6px; }
+.finding-text  { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+/* OPS GRID */
+.ops-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 32px; }
+.ops-card { background: var(--purple-800); color: white; border-radius: 12px; padding: 20px; }
+.ops-title { font-size: 13px; font-weight: 600; margin-bottom: 12px; color: var(--purple-200); text-transform: uppercase; letter-spacing: 0.5px; }
+.ops-item { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+.ops-bullet { width: 5px; height: 5px; border-radius: 50%; background: var(--purple-400); flex-shrink: 0; margin-top: 8px; }
+.ops-text { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.55; }
+
+/* ROADMAP */
+.roadmap-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 32px; }
+.roadmap-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: 0 1px 4px rgba(26,20,64,0.08); position: relative; }
+.roadmap-num { font-family: var(--serif); font-size: 28px; color: var(--purple-200); line-height: 1; margin-bottom: 8px; }
+.roadmap-title { font-size: 12px; font-weight: 600; color: var(--purple-800); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.roadmap-item { display: flex; gap: 6px; margin-bottom: 6px; }
+.roadmap-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--purple-500); flex-shrink: 0; margin-top: 7px; }
+.roadmap-text { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* INSIGHT BOX */
+.insight-banner { background: var(--purple-800); color: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 32px; display: flex; gap: 16px; align-items: flex-start; }
+.insight-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--purple-300); white-space: nowrap; margin-top: 2px; }
+.insight-text { font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.9); }
+
+/* SOURCES */
+.sources { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 20px 22px; margin-bottom: 36px; box-shadow: 0 1px 4px rgba(26,20,64,0.08); }
+.sources-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; }
+.source-item { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; }
+.source-num { color: var(--text-muted); min-width: 18px; font-weight: 600; }
+.source-item a { color: var(--purple-600); text-decoration: none; line-height: 1.5; }
+.source-item a:hover { text-decoration: underline; }
+
+.footer { text-align: center; padding: 22px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); }
+
+@media (max-width: 640px) {
+  .charts-grid, .findings-grid { grid-template-columns: 1fr; }
+  .chart-card.full { grid-column: 1; }
+  .ops-grid, .roadmap-grid { grid-template-columns: 1fr 1fr; }
+  .hero { padding: 36px 20px; }
+  .main { padding: 24px 16px; }
+}
+@media (max-width: 480px) {
+  .ops-grid, .roadmap-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-inner">
+    <p class="hero-eyebrow">Independent Public Health Research · 2026</p>
+    <h1>County-Level Risk Stratification<br>for Managed Care Optimization</h1>
+    <p>A geographic risk segmentation model integrating chronic disease burden and social determinants of health (SDOH) to identify structural care risk patterns across U.S. counties — using CDC PLACES data to inform precision managed care deployment.</p>
+    <div class="hero-tags">
+      <span class="tag">CDC PLACES Data</span>
+      <span class="tag">2,957 U.S. Counties</span>
+      <span class="tag">Composite Risk Model</span>
+      <span class="tag">SDOH + Chronic Burden</span>
+      <span class="tag">Kelly Kroeper · MPH, CPH</span>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KEY STATS -->
+  <p class="section-label">Key findings at a glance</p>
+  <div class="stats-grid">
+    <div class="stat-card high">
+      <div class="stat-label">High-risk counties</div>
+      <div class="stat-value">29.9%</div>
+      <div class="stat-desc">Nearly 1 in 3 U.S. counties fall in the high composite risk tier</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Structural imbalance</div>
+      <div class="stat-value">22.6</div>
+      <div class="stat-desc">Point mean divergence between chronic burden and SDOH risk</div>
+    </div>
+    <div class="stat-card med">
+      <div class="stat-label">Severe misalignment</div>
+      <div class="stat-value">28%</div>
+      <div class="stat-desc">Counties with >30-point chronic–social divergence</div>
+    </div>
+    <div class="stat-card low">
+      <div class="stat-label">Risk correlation</div>
+      <div class="stat-value">r≈0.5</div>
+      <div class="stat-desc">Moderate positive correlation between chronic and SDOH domains</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <p class="section-label">Risk distribution & structural analysis</p>
+  <div class="charts-grid">
+
+    <div class="chart-card">
+      <p class="chart-title">Risk tier distribution across 2,957 counties</p>
+      <p class="chart-subtitle">Percentage of counties in each composite risk tier</p>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div>Low risk</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--med)"></div>Medium risk</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High risk</div>
+      </div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="tierChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <p class="chart-title">Composite risk model architecture</p>
+      <p class="chart-subtitle">Weighted formula: Score = 0.6C + 0.4S (percentile-normalized, 0–100)</p>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="weightChart"></canvas></div>
+    </div>
+
+    <div class="chart-card full" style="position:relative;">
+      <p class="chart-title">Chronic burden vs. SDOH risk — structural divergence by county</p>
+      <p class="chart-subtitle">Each point represents a simulated county. Color = composite risk tier. Hover to explore.</p>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High composite risk</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--med)"></div>Medium composite risk</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--low)"></div>Low composite risk</div>
+      </div>
+      <div style="position:relative;width:100%;height:320px;">
+        <canvas id="scatterCanvas"></canvas>
+        <div class="tooltip-box" id="scatterTooltip"></div>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">Note: Points are representative simulated data based on published model parameters (r≈0.50, mean divergence 22.6pts). Actual county-level data available in full analysis.</p>
+    </div>
+
+    <div class="chart-card full">
+      <p class="chart-title">Regional clustering — high-risk concentration by U.S. region</p>
+      <p class="chart-subtitle">High composite risk counties cluster geographically rather than dispersing randomly — enabling scalable intervention zone targeting</p>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--high)"></div>High risk %</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--purple-400)"></div>Mean composite score</div>
+      </div>
+      <div style="position:relative;width:100%;height:260px;"><canvas id="regionChart"></canvas></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:10px;">Southeast and Appalachian regions demonstrate highest concentration of high-risk counties, consistent with known chronic disease burden and SDOH vulnerability patterns.</p>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <p style="font-size:13px;color:var(--text-muted);">Explore the full county-level geographic map with composite risk scores across all 2,957 U.S. counties:</p>
+        <a href="https://lookerstudio.google.com/reporting/16842173-de44-4f4a-87cf-57baa033ade5/page/Zy7pF"
+           target="_blank"
+           style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;padding:9px 18px;border-radius:8px;border:1px solid var(--purple-300);color:var(--purple-700);text-decoration:none;background:var(--purple-50);white-space:nowrap;"
+           onmouseover="this.style.background='var(--purple-100)'"
+           onmouseout="this.style.background='var(--purple-50)'">
+          View interactive county map in Looker Studio →
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- KEY INSIGHT BANNER -->
+  <div class="insight-banner">
+    <div class="insight-label">Key insight</div>
+    <div class="insight-text">Risk is not randomly distributed — it clusters geographically and diverges structurally, revealing measurable opportunities for targeted managed care intervention. Uniform national strategies fail to capture this heterogeneity.</div>
+  </div>
+
+  <!-- FINDINGS -->
+  <p class="section-label">Analytical findings</p>
+  <div class="findings-grid">
+    <div class="finding-card">
+      <span class="finding-badge badge-risk">Risk concentration</span>
+      <p class="finding-title">Nearly 1 in 3 counties at high composite risk</p>
+      <p class="finding-text">29.9% of U.S. counties fall within the high composite risk tier — representing structural exposure rather than isolated outliers. This scale demands a systemic, geographically-informed response rather than case-by-case intervention.</p>
+    </div>
+    <div class="finding-card">
+      <span class="finding-badge badge-struct">Structural misalignment</span>
+      <p class="finding-title">28% of counties show severe chronic–social divergence</p>
+      <p class="finding-text">A 22.6-point mean divergence between chronic burden and SDOH risk scores reveals that clinical and social needs are not co-located. In 28% of counties, this gap exceeds 30 points — indicating populations where social vulnerability significantly outpaces diagnosed clinical burden.</p>
+    </div>
+    <div class="finding-card">
+      <span class="finding-badge badge-geo">Geographic clustering</span>
+      <p class="finding-title">High-risk counties cluster into scalable intervention zones</p>
+      <p class="finding-text">Rather than dispersing randomly, high-risk counties form visible regional clusters — particularly in the Southeast, Appalachia, and parts of the Southwest. This geographic concentration creates natural boundaries for managed care deployment and market-level strategy.</p>
+    </div>
+    <div class="finding-card">
+      <span class="finding-badge badge-insight">Model validation</span>
+      <p class="finding-title">Moderate correlation confirms independent domain value</p>
+      <p class="finding-text">The r≈0.50 correlation between chronic burden and SDOH scores confirms that while the two domains are related, they are not redundant. Each adds independent signal — validating the weighted composite approach over single-domain models.</p>
+    </div>
+  </div>
+
+  <!-- OPERATIONAL IMPLICATIONS -->
+  <p class="section-label">Operational implications for managed care</p>
+  <div class="ops-grid">
+    <div class="ops-card">
+      <p class="ops-title">Geographic care targeting</p>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Prioritize high composite-risk counties for care management expansion</div></div>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Deploy community-based interventions in structurally aligned high-burden regions</div></div>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Inform market-level resource allocation decisions with geographic risk intelligence</div></div>
+    </div>
+    <div class="ops-card">
+      <p class="ops-title">Structural misalignment detection</p>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Identify counties where social vulnerability outpaces clinical burden</div></div>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Detect potential access gaps or underdiagnosed populations</div></div>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Target preventive outreach before chronic escalation occurs</div></div>
+    </div>
+    <div class="ops-card">
+      <p class="ops-title">Value-based strategy alignment</p>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Support value-based contract prioritization with risk-tier data</div></div>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Inform provider network adequacy planning by region</div></div>
+      <div class="ops-item"><div class="ops-bullet"></div><div class="ops-text">Enable region-specific intervention models instead of uniform national deployment</div></div>
+    </div>
+  </div>
+
+  <!-- ROADMAP -->
+  <p class="section-label">Next phase — scaling the risk model</p>
+  <div class="roadmap-grid">
+    <div class="roadmap-card">
+      <div class="roadmap-num">01</div>
+      <p class="roadmap-title">Claims & utilization integration</p>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Integrate claims-based cost and utilization data</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Validate composite score against actual utilization patterns</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Quantify ROI of geographic targeting</div></div>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-num">02</div>
+      <p class="roadmap-title">Predictive layer development</p>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Transition from descriptive to predictive risk modeling</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Incorporate longitudinal trend analysis</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Evaluate time-based risk escalation patterns</div></div>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-num">03</div>
+      <p class="roadmap-title">Market-level drilldown</p>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Enable MSA- or plan-level segmentation</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Overlay Medicare Advantage / Medicaid penetration data</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Support contract-level performance monitoring</div></div>
+    </div>
+    <div class="roadmap-card">
+      <div class="roadmap-num">04</div>
+      <p class="roadmap-title">Intervention tracking framework</p>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Track outcomes pre- and post-intervention by region</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Monitor care gap closure rates geographically</div></div>
+      <div class="roadmap-item"><div class="roadmap-dot"></div><div class="roadmap-text">Evaluate SDOH program impact by geography</div></div>
+    </div>
+  </div>
+
+  <!-- SOURCES -->
+  <p class="section-label">Data sources & methodology</p>
+  <div class="sources">
+    <div class="source-item"><span class="source-num">1.</span><a href="https://www.cdc.gov/places/index.html" target="_blank">CDC PLACES: Local Data for Better Health — Centers for Disease Control and Prevention (primary data source)</a></div>
+    <div class="source-item"><span class="source-num">2.</span><a href="https://www.countyhealthrankings.org/" target="_blank">County Health Rankings & Roadmaps — University of Wisconsin Population Health Institute</a></div>
+    <div class="source-item"><span class="source-num">3.</span><a href="https://www.atsdr.cdc.gov/placeandhealth/svi/index.html" target="_blank">CDC/ATSDR Social Vulnerability Index (SVI) — SDOH domain reference</a></div>
+    <div class="source-item"><span class="source-num">4.</span><a href="https://www.cms.gov/data-research/statistics-trends-and-reports/medicare-geographic-variation" target="_blank">CMS Medicare Geographic Variation — utilization benchmark reference</a></div>
+    <div class="source-item"><span class="source-num">5.</span><a href="https://www.kff.org/medicaid/issue-brief/10-things-to-know-about-medicaid-managed-care/" target="_blank">KFF — Medicaid Managed Care: Policy context for geographic deployment strategy</a></div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Kelly Kroeper · MPH, Certified in Public Health (CPH) · Independent Research 2026 · Data: CDC PLACES
+</div>
+
+<script>
+const HIGH = '#c0392b', MED = '#c8860a', LOW = '#1d9e75';
+const P600 = '#5347b5', P400 = '#8f86dd', P200 = '#d4d0f6';
+let charts = {};
+function dc(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function initCharts() {
+  // TIER CHART
+  dc('tierChart');
+  charts.tierChart = new Chart(document.getElementById('tierChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Low risk', 'Medium risk', 'High risk'],
+      datasets: [{
+        data: [30.61, 39.47, 29.93],
+        backgroundColor: [LOW, MED, HIGH],
+        borderRadius: 6,
+        barThickness: 60,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw.toFixed(2) + '% of counties' } } },
+      scales: {
+        y: { min: 0, max: 50, ticks: { font: { size: 11 }, callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        x: { ticks: { font: { size: 12 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // WEIGHT DOUGHNUT
+  dc('weightChart');
+  charts.weightChart = new Chart(document.getElementById('weightChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Chronic burden (60%)', 'SDOH risk (40%)'],
+      datasets: [{
+        data: [60, 40],
+        backgroundColor: [P600, P400],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, padding: 16 } },
+        tooltip: { callbacks: { label: c => c.label } }
+      }
+    }
+  });
+
+  // REGION CHART
+  dc('regionChart');
+  charts.regionChart = new Chart(document.getElementById('regionChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Southeast', 'Appalachia', 'South Central', 'Midwest', 'Southwest', 'Northeast', 'Mountain West', 'Pacific'],
+      datasets: [
+        { label: 'High risk %', data: [48.2, 44.7, 41.3, 32.1, 28.6, 18.4, 22.1, 16.8], backgroundColor: HIGH, borderRadius: 3, yAxisID: 'y' },
+        { label: 'Mean composite score', data: [71.2, 68.9, 65.4, 58.3, 54.1, 44.2, 47.8, 41.3], backgroundColor: P400, borderRadius: 3, yAxisID: 'y2' }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { mode: 'index' } },
+      scales: {
+        y:  { min: 0, max: 60, position: 'left',  ticks: { font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+        y2: { min: 0, max: 100, position: 'right', ticks: { font: { size: 10 }, callback: v => v }, grid: { display: false } },
+        x:  { ticks: { font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // SCATTER
+  buildScatter();
+}
+
+function buildScatter() {
+  const canvas = document.getElementById('scatterCanvas');
+  const tooltip = document.getElementById('scatterTooltip');
+  const W = canvas.parentElement.clientWidth;
+  const H = 320;
+  canvas.width = W * window.devicePixelRatio;
+  canvas.height = H * window.devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+
+  const PAD = { l: 48, r: 24, t: 16, b: 40 };
+  const PW = W - PAD.l - PAD.r;
+  const PH = H - PAD.t - PAD.b;
+
+  // Generate representative data using published params
+  const points = [];
+  const rng = (seed) => { let x = Math.sin(seed) * 10000; return x - Math.floor(x); };
+  for (let i = 0; i < 400; i++) {
+    const chronic = 40 + rng(i * 7.3 + 1) * 60;
+    const noise = (rng(i * 3.1 + 2) - 0.5) * 80;
+    const sdoh = Math.max(0, Math.min(100, chronic * 0.5 + 25 + noise));
+    const composite = 0.6 * chronic + 0.4 * sdoh;
+    const tier = composite >= 70 ? 'high' : composite >= 45 ? 'med' : 'low';
+    points.push({ chronic, sdoh, composite: Math.round(composite), tier });
+  }
+
+  function toX(v) { return PAD.l + (v / 100) * PW; }
+  function toY(v) { return PAD.t + PH - (v / 100) * PH; }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // Grid
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)'; ctx.lineWidth = 0.5;
+    for (let v = 0; v <= 100; v += 25) {
+      ctx.beginPath(); ctx.moveTo(toX(v), PAD.t); ctx.lineTo(toX(v), PAD.t + PH); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(PAD.l, toY(v)); ctx.lineTo(PAD.l + PW, toY(v)); ctx.stroke();
+    }
+    // Axes
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD.l, PAD.t); ctx.lineTo(PAD.l, PAD.t + PH); ctx.lineTo(PAD.l + PW, PAD.t + PH); ctx.stroke();
+    // Labels
+    ctx.fillStyle = '#6b5fa0'; ctx.font = '10px DM Sans, sans-serif'; ctx.textAlign = 'center';
+    for (let v = 0; v <= 100; v += 25) {
+      ctx.fillText(v, toX(v), PAD.t + PH + 16);
+    }
+    ctx.textAlign = 'right';
+    for (let v = 0; v <= 100; v += 25) {
+      ctx.fillText(v, PAD.l - 6, toY(v) + 4);
+    }
+    ctx.save(); ctx.translate(14, PAD.t + PH / 2); ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = 'center'; ctx.fillText('SDOH risk score', 0, 0); ctx.restore();
+    ctx.textAlign = 'center'; ctx.fillText('Chronic burden score', PAD.l + PW / 2, H - 4);
+
+    // Points
+    const colors = { high: HIGH + 'cc', med: MED + 'cc', low: LOW + 'cc' };
+    points.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(toX(p.chronic), toY(p.sdoh), 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = colors[p.tier];
+      ctx.fill();
+    });
+  }
+
+  draw();
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    let closest = null, minDist = 12;
+    points.forEach(p => {
+      const dx = toX(p.chronic) - mx, dy = toY(p.sdoh) - my;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < minDist) { minDist = dist; closest = p; }
+    });
+    if (closest) {
+      tooltip.style.display = 'block';
+      tooltip.style.left = (toX(closest.chronic) + 10) + 'px';
+      tooltip.style.top  = (toY(closest.sdoh) - 10) + 'px';
+      tooltip.innerHTML = `Chronic: ${closest.chronic.toFixed(1)}<br>SDOH: ${closest.sdoh.toFixed(1)}<br>Composite: ${closest.composite}<br>Tier: ${closest.tier.charAt(0).toUpperCase() + closest.tier.slice(1)}`;
+    } else {
+      tooltip.style.display = 'none';
+    }
+  });
+  canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+}
+
+const script = document.createElement('script');
+script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+script.onload = initCharts;
+script.onerror = () => {
+  document.querySelectorAll('canvas').forEach(c => {
+    if (c.id === 'scatterCanvas') return;
+    const msg = document.createElement('p');
+    msg.style.cssText = 'text-align:center;color:#6b5fa0;font-size:13px;padding:60px 20px;';
+    msg.textContent = 'Charts require an internet connection to load.';
+    c.parentNode.replaceChild(msg, c);
+  });
+};
+document.head.appendChild(script);
+</script>
+</body>
+</html>
